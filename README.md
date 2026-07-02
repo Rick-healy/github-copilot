@@ -1,107 +1,98 @@
-# GitHub Copilot Resources
+# GitHub Copilot Customization — Template Repo
 
-A collection of reusable GitHub Copilot customization files — chat modes, instruction files, and prompt workflows — designed to be dropped into any repository's `.github/` folder.
+A drop-in template of GitHub Copilot customization for VS Code, using the current (2026) primitives: **agents**, **skills**, **instructions**, **MCP**, and a cross-tool **`AGENTS.md`**.
 
-## Repository Structure
+> This repo was updated in July 2026. If you're wondering what changed and why, read [`UPDATES-2026.md`](UPDATES-2026.md) — it's a narrative of the migration from the old chat-mode + prompt-chain model. Anything superseded is preserved under [`0.archive/`](0.archive/).
 
-```
-.github/
-├── copilot-instructions.md              # Global Copilot behaviour (style, tone)
-├── chatmodes/
-│   └── SoftwareEngineer.chatmode.md     # Expert software engineer chat mode
-├── instructions/
-│   ├── java.instructions.md             # Java coding conventions
-│   ├── python.instructions.md           # Python coding conventions
-│   └── xml-xsd.instructions.md          # XML/XSD best practices
-└── prompts/
-    ├── project-delivery-orchestrator.prompt.md   # Multi-phase project delivery
-    ├── quick-task-orchestrator.prompt.md          # Single-day task workflow
-    ├── project-delivery/                          # Sub-prompts for project delivery
-    │   ├── 1.project-requirements-gatherer.prompt.md
-    │   ├── 2.project-specifications-collector.prompt.md
-    │   ├── 3.project-approach-planner.prompt.md
-    │   ├── 4.project-standards-setter.prompt.md
-    │   └── 5.project-implementation-executor.prompt.md
-    └── quick-task/                                # Sub-prompts for quick tasks
-        ├── 1.task-objective.prompt.md
-        ├── 2.task-approaches.prompt.md
-        ├── 3.task-plan.prompt.md
-        └── 4.task-execute.prompt.md
-```
-
-## What's Included
-
-### Global Instructions — `copilot-instructions.md`
-
-Applies to every Copilot interaction in the repo. Currently sets style and tone rules (plain, concise language; validate work before considering it complete).
-
-### Chat Mode — `SoftwareEngineer.chatmode.md`
-
-A custom chat mode that configures Copilot as an expert software engineer. It:
-
-- Uses the Claude 4 model with a broad set of tools enabled.
-- Suggests the prompt workflows below at the start of a conversation.
-- Enforces testing standards (80%+ coverage, parameterized tests, mirrored test structure).
-
-**To use:** Select **Software Engineer** from the chat mode picker in VS Code.
-
-### Language Instructions
-
-Auto-applied to matching files via `applyTo` globs — no manual invocation needed.
-
-| File | Applies To | What It Covers |
-|------|-----------|----------------|
-| `java.instructions.md` | `**/*.java` | Oracle/Google style, records, pattern matching, `var`, null handling with `Optional`, SonarQube rule table, Maven/Gradle build checks |
-| `python.instructions.md` | `**/*.py` | PEP 8/257, type hints, f-strings, dataclasses, pathlib, custom exceptions, static analysis tooling prompts |
-| `xml-xsd.instructions.md` | `**/*.xml`, `**/*.xsd`, `**/*.xsl`, `**/*.xslt` | Namespace conventions, attributes vs elements, schema-first design, versioning, XSD type definitions |
-
-### Prompt Workflows
-
-Two orchestrated prompt workflows that guide Copilot through structured, multi-step processes.
-
-#### 1. Project Delivery (multi-week)
-
-A 5-phase process covering requirements → specifications → approach → standards → implementation. Artifacts are written to a `0.Delivery/` folder.
+## What you get
 
 ```
-/project-delivery-orchestrator "Your project goal here"
+├── AGENTS.md                          # Cross-tool repo conventions (Copilot / Codex / Claude / Cursor)
+├── LICENSE                            # MIT
+├── UPDATES-2026.md                    # Migration narrative
+├── .vscode/
+│   └── mcp.json                       # Repo-scoped MCP servers
+├── .github/
+│   ├── copilot-instructions.md        # Copilot-specific style/tone (always-on)
+│   ├── agents/                        # Custom agents (personas + tools + handoffs)
+│   │   ├── software-engineer.agent.md #   General default; delegates to the others
+│   │   ├── planner.agent.md           #   Read-only, produces plans → hands off to Implementer
+│   │   ├── implementer.agent.md       #   Executes plans → hands off to Reviewer
+│   │   └── reviewer.agent.md          #   Read-only, reviews changes
+│   ├── skills/                        # Multi-step workflows
+│   │   ├── project-delivery/SKILL.md  #   5-phase multi-week project workflow
+│   │   └── quick-task/SKILL.md        #   4-phase single-day task workflow
+│   └── instructions/                  # Language / file-type rules (auto-applied)
+│       ├── typescript.instructions.md
+│       ├── csharp.instructions.md
+│       ├── python.instructions.md
+│       ├── java.instructions.md
+│       ├── bicep.instructions.md
+│       ├── xml-xsd.instructions.md
+│       └── markdown.instructions.md
+└── 0.archive/                         # Legacy chatmodes + prompt files (safe to delete)
 ```
 
-Phases (each has its own sub-prompt in `prompts/project-delivery/`):
+## How the pieces fit together
 
-1. **Requirements Gathering** — collects and organises all project requirements.
-2. **Specifications Collector** — gathers supporting docs, examples, and assets.
-3. **Approach Planner** — presents implementation options and creates a plan.
-4. **Standards Setter** — defines coding and testing standards for the project.
-5. **Implementation Executor** — executes development with progress tracking.
+The current customization model separates concerns cleanly. Each piece has one job:
 
-#### 2. Quick Task (single day, max 8 hours)
+| Primitive | Answers the question | Kicks in |
+|---|---|---|
+| **`AGENTS.md`** + **`copilot-instructions.md`** | "How should the AI behave in this repo?" | Every request |
+| **Instructions** (`.instructions.md`) | "How is *this kind of file* written here?" | Automatically, when files match `applyTo` |
+| **Custom agents** (`.agent.md`) | "Who is the AI right now?" (persona + tools + model) | You pick from the `/agents` menu |
+| **Skills** (`SKILL.md`) | "Run this multi-step workflow" | The AI invokes when the task matches |
+| **MCP** (`.vscode/mcp.json`) | "What external systems can the AI reach?" | Automatically, when the config loads |
 
-A streamlined 4-phase process for focused tasks like refactoring, bug fixes, or small features.
+## Quick start
 
+1. **Copy this repo's contents into your project** (`AGENTS.md`, `LICENSE`, `.vscode/mcp.json`, and the whole `.github/` folder). Skip `0.archive/` and `UPDATES-2026.md` — they're historical.
+2. **Open your project in VS Code** with GitHub Copilot Chat installed.
+3. **Verify it loaded:** in the Chat view, open the settings gear → **Instructions & Rules** should list your instruction files; the `/agents` picker should list Planner, Implementer, Reviewer, and Software Engineer.
+4. **Try a workflow:**
+   - Select the **Planner** agent, describe a change → get a plan → click **Start Implementation** (handoff) to switch to the Implementer.
+   - Or, describe a multi-day project — the AI will invoke the **project-delivery** skill and walk you through the phases.
+   - For a bug fix or a small feature, ask for a "quick task" and the **quick-task** skill will kick in.
+5. **Customise:**
+   - Add or update files under `.github/instructions/` for your stack.
+   - Edit `AGENTS.md` with any repo-specific standards.
+   - Add MCP servers to `.vscode/mcp.json` for internal APIs, databases, or docs.
+
+## Handoff flow (demo-friendly)
+
+```mermaid
+flowchart LR
+    User([User prompt])
+    User --> SE[Software Engineer]
+    SE -->|Plan First| Planner
+    Planner -->|Start Implementation| Implementer
+    Implementer -->|Send for Review| Reviewer
+    Reviewer -->|Back to Implementer| Implementer
 ```
-/quick-task-orchestrator "Your task description here"
-```
 
-Phases (each has its own sub-prompt in `prompts/quick-task/`):
+Each handoff renders as a button under the chat response. No copy-paste of `#file:` references.
 
-1. **Objective** — clarifies what needs doing and defines success criteria.
-2. **Approaches** — presents 2-3 options with pros/cons and time estimates.
-3. **Plan** — breaks work into 3-7 concrete steps.
-4. **Execute** — implements the plan with real-time progress tracking.
+## Skills vs prompts — quick reference
 
-## How to Use
+**Use a skill** for multi-step deterministic workflows (like project-delivery, quick-task). The AI reads the skill once and executes it.
 
-1. **Copy the `.github/` folder** into the root of your target repository.
-2. **Open the repo in VS Code** with GitHub Copilot installed.
-3. Language instructions apply automatically when you edit matching files.
-4. Switch to the **Software Engineer** chat mode for the full experience.
-5. Invoke a prompt workflow by typing the slash command or referencing the file:
-   ```
-   /project-delivery-orchestrator "description"
-   /quick-task-orchestrator "description"
-   ```
+**Use a prompt file** (`.github/prompts/*.prompt.md`, not included in this template) for one-shot repeatable tasks — "scaffold a React component", "generate a security review". Prompts are invoked via `/prompt-name` slash commands and support YAML frontmatter for `agent`, `model`, `tools`, `description`.
+
+## References
+
+- [VS Code — Agent customization overview](https://code.visualstudio.com/docs/agent-customization/overview)
+- [VS Code — Custom agents](https://code.visualstudio.com/docs/agent-customization/custom-agents)
+- [VS Code — Agent skills](https://code.visualstudio.com/docs/agent-customization/agent-skills)
+- [VS Code — Custom instructions](https://code.visualstudio.com/docs/agent-customization/custom-instructions)
+- [VS Code — MCP servers](https://code.visualstudio.com/docs/agent-customization/mcp-servers)
+- [`AGENTS.md` convention](https://agents.md)
+- [awesome-copilot](https://github.com/github/awesome-copilot) — community-contributed examples
 
 ## Contributing
 
-Feel free to add new instruction files, chat modes, or prompt workflows and submit a PR.
+Additions welcome — new instructions files, new agents, new skills. Keep to the format described in each folder's siblings and the linked VS Code docs.
+
+## License
+
+[MIT](LICENSE).
